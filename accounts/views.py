@@ -1,80 +1,200 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+import random
+from .serializers import RegisterSerializer
+from .models import User, EmailOTP
+from .customtoken import CustomRefreshToken
+from .authentication import CookieJWTAuthentication
+from .otp import send_otp_email
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from accounts.serializers import RegisterSerializer
-from accounts.services.otp import send_email_otp
+from django.utils import timezone
+from datetime import timedelta
+import random
 
 
-class RegisterView(APIView):
+class Register(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
-        if serializer.is_valid():
-            user = serializer.save()
-            send_email_otp(user)
+        otp = str(random.randint(100000, 999999))
+        expires = timezone.now() + timedelta(minutes=10)  
+        EmailOTP.objects.create(user=user, otp=otp, expires_at=expires)
 
+        return Response(
+            {"message": "OTP sent to email", "email": user.email},
+            status=status.HTTP_201_CREATED
+        )
+
+
+class VerifyOTP(APIView): 
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        otp = request.data.get("otp")
+
+        if not email or not otp:
+            return Response({"error": "Email and OTP required"}, status=400)
+
+        user = get_object_or_404(User, email=email)
+        otp_obj = EmailOTP.objects.filter(user=user).last()
+
+        if not otp_obj:
+            return Response({"error": "OTP not found"}, status=400)
+
+        if otp_obj.is_expired():
+            return Response({"error": "OTP expired"}, status=400)
+
+        if otp_obj.otp != otp:
+            return Response({"error": "Invalid OTP"}, status=400)
+
+        user.is_active = True
+        user.save()
+        otp_obj.delete()
+
+        return Response({"message": "Email verified"}, status=200)
+
+
+
+class Login(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        if not email or not password:
             return Response(
-                {"message": "OTP sent to email"},
-                status=status.HTTP_201_CREATED
+                {"error": "Email and password are required"},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = authenticate(request, email=email, password=password)
+
+        if not user:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        if not user.is_active:
+            return Response(
+                {"error": "Please verify your email"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        refresh = CustomRefreshToken.for_user(user)
+
+        response = Response(
+            {
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "role": user.role,
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+        response.set_cookie(
+            "access",
+            str(refresh.access_token),
+            httponly=True,
+            samesite="Lax",
+            secure= False,
+            max_age=60 * 15,  
+        )
+
+        response.set_cookie(
+            "refresh",
+            str(refresh),
+            httponly=True,
+            samesite="Lax",
+            secure= False,
+            max_age=60 * 60 * 24 * 7,  
+        )
+
+        return response
+
+
+class Logout(APIView):
     
+    permission_classes = [AllowAny] 
 
-
-
-from accounts.serializers import VerifyOTPSerializer
-
-
-class VerifyOTPView(APIView):
     def post(self, request):
-        serializer = VerifyOTPSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            otp_obj = serializer.validated_data['otp_obj']
+        response = Response(
+            {"message": "Logged out successfully"},
+            status=status.HTTP_200_OK
+        )
 
-            otp_obj.is_used = True
-            otp_obj.save()
+        refresh_token = request.COOKIES.get("refresh")
 
-           
-            user.is_active = True
-            user.save()
+        if refresh_token:
+            try:
+                token = CustomRefreshToken(refresh_token)
+                token.blacklist()   
+            except Exception:
+                pass  
 
-            return Response({"message": "Email verified successfully"}, status=status.HTTP_200_OK)
+        
+        response.delete_cookie("access", samesite="Lax")
+        response.delete_cookie("refresh", samesite="Lax")
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-#loggginn
-from accounts.serializers import LoginSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
-
-class LoginView(APIView):
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            tokens = serializer.create_tokens(user)
-
-            return Response({
-                "message": "Login successful",
-                "access": tokens['access'],
-                "refresh": tokens['refresh']
-            }, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        return response
 
 
-from .serializers import CustomTokenObtainSerializer
+class Me(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
-class CustomTokenObtainView(APIView):
-    def post(self, request):
-        serializer = CustomTokenObtainSerializer(data=request.data)
-        if serializer.is_valid():
-            return Response(serializer.validated_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request):
+        user = request.user
+        return Response({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+        })
 
 
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
+class CookieTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        refresh = request.COOKIES.get("refresh")
+        if not refresh:
+            return Response({"error": "No refresh token"}, status=401)
+
+        request.data["refresh"] = refresh
+
+        try:
+            response = super().post(request, *args, **kwargs)
+
+            response.set_cookie(
+                key="access",
+                value=response.data["access"],
+                httponly=True,
+                samesite="Lax",     
+                secure=False,        
+                max_age=60 * 15,    
+            )
+
+            del response.data["access"]
+            return response
+
+        except (InvalidToken, TokenError):
+            return Response({"error": "Invalid refresh token"}, status=401)

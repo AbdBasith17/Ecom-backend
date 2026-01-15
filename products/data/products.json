@@ -1,0 +1,307 @@
+{
+  "categories": [
+    { "name": "Men", "slug": "men" },
+    { "name": "Women", "slug": "women" }
+  ],
+  "products": [
+    {
+      "title": "Dior Sauvage Eau de Toilette",
+      "description": "Bold, fresh, and masculine scent with bergamot, pepper, and amberwood.",
+      "category": "men",
+      "price": 8200,
+      "stock": 100,
+      "sold": 35,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://www.dior.com/dw/image/v2/BGXS_PRD/on/demandware.static/-/Sites-master_dior/default/dwb57d0b59/Y0685240/Y0685240_F068524009_E01_GHC.jpg?sw=800"]
+    },
+    {
+      "title": "Bleu de Chanel",
+      "description": "Woody aromatic fragrance with citrus and sandalwood notes.",
+      "category": "men",
+      "price": 9400,
+      "stock": 80,
+      "sold": 28,
+      "ml": "200 ml",
+      "is_active": false,
+      "images": ["https://m.media-amazon.com/images/I/51T8w3UJtAL._UF1000,1000_QL80_.jpg"]
+    },
+    {
+      "title": "Acqua Di Gio by Giorgio Armani",
+      "description": "Fresh aquatic scent with marine, citrus, and woody tones.",
+      "category": "men",
+      "price": 7800,
+      "stock": 95,
+      "sold": 40,
+      "ml": "400 ml",
+      "is_active": true,
+      "images": ["https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/wrkr/products/pictures/item/free/original/armani/7025307/0/aPqcSktSCw.png"]
+    },
+    {
+      "title": "1 Million by Paco Rabanne",
+      "description": "Warm and spicy with cinnamon, leather, and amber.",
+      "category": "men",
+      "price": 7100,
+      "stock": 70,
+      "sold": 30,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://assets.myntassets.com/assets/images/2233588/2022/8/6/1million.jpg"]
+    },
+    {
+      "title": "David Beckham Instinct",
+      "description": "Aromatic fougère with grapefruit, bergamot, and star anise.",
+      "category": "men",
+      "price": 2200,
+      "stock": 120,
+      "sold": 55,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://m.media-amazon.com/images/I/61knAWmGjtL.jpg"]
+    },
+    {
+      "title": "Yves Saint Laurent L'Homme",
+      "description": "Fresh and woody with ginger, bergamot, and vetiver.",
+      "category": "men",
+      "price": 7300,
+      "stock": 90,
+      "sold": 44,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://altfragrance.in/cdn/shop/files/208.png"]
+    },
+    {
+      "title": "Burberry Men",
+      "description": "Classic scent with lavender, mint, and cedarwood.",
+      "category": "men",
+      "price": 5400,
+      "stock": 85,
+      "sold": 33,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://www.perfumeaddicts.in/wp-content/uploads/2024/02/burberry-touch.jpg"]
+    },
+    {
+      "title": "Versace Eros",
+      "description": "Intense masculine fragrance with mint, green apple, and tonka bean.",
+      "category": "men",
+      "price": 8800,
+      "stock": 88,
+      "sold": 50,
+      "ml": "300 ml",
+      "is_active": true,
+      "images": ["https://www.versace.com/dw/image/v2/BGWN_PRD/on/demandware.static/-/Sites-ver-master-catalog/default/dwcc47a2f0/original/eros.jpg"]
+    },
+
+    {
+      "title": "Calvin Klein Eternity for Men",
+      "description": "Refreshing scent with lavender, lemon, and sandalwood.",
+      "category": "men",
+      "price": 4600,
+      "stock": 90,
+      "sold": 36,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/eternity.jpg"]
+    },
+    {
+      "title": "Montblanc Legend",
+      "description": "Elegant fragrance with pineapple and sandalwood.",
+      "category": "men",
+      "price": 5900,
+      "stock": 80,
+      "sold": 41,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/montblanc.jpg"]
+    },
+    {
+      "title": "Bvlgari Man in Black",
+      "description": "Spicy amber scent with rum and leather.",
+      "category": "men",
+      "price": 9700,
+      "stock": 60,
+      "sold": 25,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://img.tatacliq.com/images/i10/bvlgari.jpg"]
+    },
+    {
+      "title": "Hugo Boss Bottled",
+      "description": "Warm and spicy fragrance with apple and cinnamon.",
+      "category": "men",
+      "price": 6800,
+      "stock": 85,
+      "sold": 48,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://assets.myntassets.com/assets/images/10293481/boss.jpg"]
+    },
+    {
+      "title": "Gucci Guilty Pour Homme",
+      "description": "Aromatic fougère with lavender and patchouli.",
+      "category": "men",
+      "price": 8600,
+      "stock": 70,
+      "sold": 29,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/gucci-guilty.jpg"]
+    },
+    {
+      "title": "Prada L'Homme",
+      "description": "Sophisticated blend of iris, amber, and neroli.",
+      "category": "men",
+      "price": 9900,
+      "stock": 55,
+      "sold": 20,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://assets.ajio.com/prada.jpg"]
+    },
+    {
+      "title": "Lacoste Blanc",
+      "description": "Fresh and clean with grapefruit and cedarwood.",
+      "category": "men",
+      "price": 5200,
+      "stock": 100,
+      "sold": 60,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://encrypted-tbn0.gstatic.com/lacoste.jpg"]
+    },
+
+    {
+      "title": "Chanel No. 5",
+      "description": "Timeless floral with jasmine and May rose.",
+      "category": "women",
+      "price": 10500,
+      "stock": 50,
+      "sold": 48,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://scentoria.co.in/cdn/shop/files/Chanel_No_5.jpg"]
+    },
+    {
+      "title": "Miss Dior Eau de Parfum",
+      "description": "Romantic floral blend with rose and vanilla.",
+      "category": "women",
+      "price": 9800,
+      "stock": 65,
+      "sold": 52,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://m.media-amazon.com/images/I/61R1+HpKFPL.jpg"]
+    },
+    {
+      "title": "Versace Bright Crystal",
+      "description": "Delicate floral with pomegranate and peony.",
+      "category": "women",
+      "price": 6700,
+      "stock": 90,
+      "sold": 63,
+      "ml": "90 ml",
+      "is_active": true,
+      "images": ["https://static.sweetcare.com/img/prd/versace-bright.jpg"]
+    },
+    {
+      "title": "Gucci Bloom",
+      "description": "White floral fragrance with jasmine and tuberose.",
+      "category": "women",
+      "price": 8200,
+      "stock": 70,
+      "sold": 47,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://media.gucci.com/bloom.jpg"]
+    },
+    {
+      "title": "Carolina Herrera Good Girl",
+      "description": "Sweet and spicy scent with almond and coffee.",
+      "category": "women",
+      "price": 8700,
+      "stock": 80,
+      "sold": 58,
+      "ml": "80 ml",
+      "is_active": true,
+      "images": ["https://m.media-amazon.com/images/I/51TjGyzc0HL.jpg"]
+    },
+    {
+      "title": "Yves Saint Laurent Black Opium",
+      "description": "Warm fragrance with coffee and vanilla.",
+      "category": "women",
+      "price": 8900,
+      "stock": 75,
+      "sold": 61,
+      "ml": "90 ml",
+      "is_active": true,
+      "images": ["https://momperfume.in/cdn/shop/files/black-opium-ysl.jpg"]
+    },
+    {
+      "title": "DKNY Be Delicious",
+      "description": "Fruity floral with apple and grapefruit.",
+      "category": "women",
+      "price": 5400,
+      "stock": 95,
+      "sold": 67,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://images-static.nykaa.com/media/catalog/product/dkny.jpg"]
+    },
+    {
+      "title": "Tom Ford Rose Prick",
+      "description": "Bold rose fragrance with spices.",
+      "category": "women",
+      "price": 13500,
+      "stock": 40,
+      "sold": 18,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://img.tatacliq.com/images/i24/tomford.jpg"]
+    },
+    {
+      "title": "Jo Malone Peony & Blush Suede",
+      "description": "Elegant floral with red apple and peony.",
+      "category": "women",
+      "price": 9200,
+      "stock": 60,
+      "sold": 34,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://encrypted-tbn0.gstatic.com/jomalone.jpg"]
+    },
+    {
+      "title": "Bvlgari Omnia Crystalline",
+      "description": "Clean scent with bamboo and lotus flower.",
+      "category": "women",
+      "price": 7600,
+      "stock": 85,
+      "sold": 49,
+      "ml": "65 ml",
+      "is_active": true,
+      "images": ["https://a.cdnsbn.com/images/products/l/33606835006.jpg"]
+    },
+    {
+      "title": "Lancôme La Vie Est Belle",
+      "description": "Sweet floral with iris and gourmand notes.",
+      "category": "women",
+      "price": 9900,
+      "stock": 55,
+      "sold": 42,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://momperfume.in/cdn/shop/files/lancome.jpg"]
+    },
+    {
+      "title": "Ralph Lauren Romance",
+      "description": "Fresh floral with rose and violet.",
+      "category": "women",
+      "price": 6100,
+      "stock": 90,
+      "sold": 64,
+      "ml": "100 ml",
+      "is_active": true,
+      "images": ["https://cdn.fynd.com/v2/falling-surf-7c8bb8/fyprod/ralph-romance.jpg"]
+    }
+  ]
+}
