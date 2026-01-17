@@ -6,10 +6,10 @@ from .pagination import ProductPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 
-from rest_framework.permissions import IsAdminUser
-
+from rest_framework.permissions import IsAdminUser,AllowAny
 
 class ProductListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     pagination_class = ProductPagination
@@ -20,10 +20,12 @@ class ProductListView(generics.ListAPIView):
     search_fields = ['title', 'description']
 
 class ProductDetailView(generics.RetrieveAPIView):
+    permission_classes = [AllowAny]
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
 
 class BestSellerListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     serializer_class = ProductSerializer
     
     def get_queryset(self):
@@ -32,6 +34,7 @@ class BestSellerListView(generics.ListAPIView):
 
 
 class CategoryListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
