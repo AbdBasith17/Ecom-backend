@@ -1,6 +1,6 @@
 
-from rest_framework import generics
-from .models import Product, Category
+from rest_framework import generics,permissions
+from .models import Product, Category ,ProductImage
 from .serializers import ProductSerializer, CategorySerializer
 from .pagination import ProductPagination
 from django_filters.rest_framework import DjangoFilterBackend
@@ -39,6 +39,17 @@ class CategoryListView(generics.ListAPIView):
     serializer_class = CategorySerializer
 
 
+
+
+class AdminProductListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAdminUser]
+    queryset = Product.objects.all().order_by('-id') 
+    serializer_class = ProductSerializer
+   
+    filter_backends = [SearchFilter]
+    search_fields = ['title']    
+
+
 class AdminProductCreateView(generics.CreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -54,3 +65,8 @@ class AdminProductUpdateView(generics.UpdateAPIView):
 class AdminProductDeleteView(generics.DestroyAPIView):
     queryset = Product.objects.all()
     permission_classes = [IsAdminUser]
+
+
+class ProductImageDeleteView(generics.DestroyAPIView):
+    queryset = ProductImage.objects.all()
+    permission_classes = [permissions.IsAdminUser]

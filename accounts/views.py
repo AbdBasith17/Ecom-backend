@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 import random
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer,UserAdminSerializer
 from .models import User, EmailOTP
 from .customtoken import CustomRefreshToken
 from .authentication import CookieJWTAuthentication
@@ -198,3 +198,28 @@ class CookieTokenRefreshView(TokenRefreshView):
 
         except (InvalidToken, TokenError):
             return Response({"error": "Invalid refresh token"}, status=401)
+        
+
+from rest_framework import generics, permissions
+
+class UserListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAdminUser]
+    queryset = User.objects.all().order_by('-id')
+  
+    serializer_class = UserAdminSerializer 
+
+class UserStatusUpdateView(generics.UpdateAPIView):
+    permission_classes = [permissions.IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = UserAdminSerializer
+    
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+     
+        new_status = request.data.get('is_active')
+        
+        if new_status is not None:
+            instance.is_active = new_status
+            instance.save()
+            return Response({"message": "Status updated successfully"}, status=200)
+        return Response({"error": "is_active field required"}, status=400)

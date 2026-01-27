@@ -1,5 +1,16 @@
 from django.urls import path
-from .views import Register, VerifyOTP, Login, Logout, Me, CookieTokenRefreshView
+from .views import (
+    Register,
+    VerifyOTP, 
+    Login, 
+    Logout,
+    Me,
+    CookieTokenRefreshView,
+    UserListView,
+    UserStatusUpdateView
+)
+
+
 
 urlpatterns = [
     path("register/", Register.as_view()),
@@ -8,4 +19,8 @@ urlpatterns = [
     path("logout/", Logout.as_view()),
     path("me/", Me.as_view()),
     path("token/refresh/", CookieTokenRefreshView.as_view()),
+
+
+    path('admin/users/', UserListView.as_view(), name='user-list'),
+    path('admin/users/update/<int:pk>/', UserStatusUpdateView.as_view(), name='user-update'),
 ]

@@ -19,3 +19,10 @@ class RegisterSerializer(serializers.Serializer):
             is_active=False  
         )
         return user
+
+
+class UserAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        
+        fields = ['id', 'name', 'email', 'is_active', 'role']

@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from .models import Product, Category, ProductImage
 
@@ -7,31 +6,78 @@ class ProductImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = ['id', 'image']
 
-class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
-    category = serializers.StringRelatedField() 
-
-    class Meta:
-        model = Product
-        fields = ['id', 'title', 'description', 'category', 'price', 'stock', 'sold', 'ml', 'images', 'is_active', 'created_at']
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name', 'slug', 'parent']
 
+class ProductSerializer(serializers.ModelSerializer):
+    # 'images' shows the existing related images (Read Only)
+    images = ProductImageSerializer(many=True, read_only=True)
+    
+    # Use PrimaryKeyRelatedField so the frontend can send just the Category ID
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), 
+        required=False, 
+        allow_null=True
+    )
+    
+    # 'category_name' allows the frontend to display the name without another API call
+    category_name = serializers.CharField(source='category.name', read_only=True)
 
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'title', 'description', 'category', 'category_name', 
+            'price', 'stock', 'sold', 'ml', 'images', 'is_active', 'created_at'
+        ]
 
+    def create(self, validated_data):
+        """
+        Handles Product creation and multiple local image uploads.
+        """
+        # Extract files from the request context
+        # 'uploaded_images' must match the key used in React's FormData.append()
+        images_data = self.context.get('view').request.FILES.getlist('uploaded_images')
+        
+        product = Product.objects.create(**validated_data)
+        
+        for image_data in images_data:
+            ProductImage.objects.create(product=product, image=image_data)
+            
+        return product
 
+    def update(self, instance, validated_data):
+        """
+        Handles Product updates and adds new local images if provided.
+        """
+        images_data = self.context.get('view').request.FILES.getlist('uploaded_images')
+
+        # Update standard fields (title, price, ml, etc.)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # If new images are uploaded from the PC, append them to the product
+        if images_data:
+            # Optional: Uncomment the line below if you want to replace 
+            # all old images with the new ones upon update:
+            # instance.images.all().delete() 
+            
+            for image_data in images_data:
+                ProductImage.objects.create(product=instance, image=image_data)
+
+        return instance
 
 class ProductMiniSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
+    """
+    Optimized serializer for shop listing pages.
+    """
     image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-      
-        fields = ('id', 'title', 'price', 'image', 'images', 'ml') 
+        fields = ('id', 'title', 'price', 'image', 'ml')
 
     def get_image(self, obj):
         first_image = obj.images.first()
@@ -39,5 +85,5 @@ class ProductMiniSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request is not None:
                 return request.build_absolute_uri(first_image.image.url)
-            return first_image.image.url 
+            return first_image.image.url
         return None
