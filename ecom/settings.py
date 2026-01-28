@@ -52,10 +52,12 @@ INSTALLED_APPS = [
     'products',
     'cart',
     'orders',
+    'addresses',
     'wishlist',
     'django_filters', 
+    'payments',
 
-     "corsheaders",
+    "corsheaders",
 
 
 
