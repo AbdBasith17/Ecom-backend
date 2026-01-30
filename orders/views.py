@@ -5,11 +5,19 @@ from rest_framework.response import Response
 from rest_framework import status
 from decimal import Decimal
 
+from rest_framework import generics, permissions
+from .models import Order 
+from .serializers import OrderSerializer 
+
 # Import your models
 from cart.models import CartItem
 from addresses.models import Address
 from .models import Order, OrderItem
 from payments.models import Payment
+import razorpay
+from django.conf import settings
+
+
 
 class PlaceOrderAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -20,34 +28,20 @@ class PlaceOrderAPIView(APIView):
         address_id = request.data.get("address_id")
         payment_method = request.data.get("payment_method")
 
-        # 🛒 1. Get Cart Items (Using the related lookup for Cart)
         cart_items = CartItem.objects.filter(cart__user=user)
         if not cart_items.exists():
-            return Response({"error": "Cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Cart empty"}, status=400)
 
-        # 🏠 2. Validate Address
-        try:
-            address = Address.objects.get(id=address_id, user=user)
-        except (Address.DoesNotExist, ValueError):
-            return Response({"error": "Invalid address selected"}, status=status.HTTP_400_BAD_REQUEST)
+        address = Address.objects.get(id=address_id, user=user)
+        total_amount = sum(item.product.price * item.quantity for item in cart_items)
 
-        # 💰 3. Calculate Totals using Decimals
-        items_total = sum((item.product.price * item.quantity for item in cart_items), Decimal('0.00'))
-        
-        # Calculate tax and fees
-        tax = (items_total * Decimal('0.05')).quantize(Decimal('0.01'))
-        delivery_fee = Decimal('50.00') if items_total < Decimal('1000.00') else Decimal('0.00')
-        grand_total = items_total + tax + delivery_fee
-
-        # 🧾 4. Create Order
         order = Order.objects.create(
             user=user,
             address=address,
-            total_amount=grand_total,
+            total_amount=total_amount,
             payment_method=payment_method,
         )
 
-        # 📦 5. Create Order Items
         for item in cart_items:
             OrderItem.objects.create(
                 order=order,
@@ -56,20 +50,31 @@ class PlaceOrderAPIView(APIView):
                 price=item.product.price,
             )
 
-        # 💳 6. Create Payment Record
-        Payment.objects.create(
-            order=order,
-            amount=grand_total,
-        )
+        payment = Payment.objects.create(order=order, amount=total_amount)
 
-        # 🧹 7. Clear Cart
+        # 🔥 Only if online payment
+        if payment_method == "RAZORPAY":
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+            razorpay_order = client.order.create({
+                "amount": int(total_amount * 100),
+                "currency": "INR",
+                "payment_capture": "1"
+            })
+            payment.razorpay_order_id = razorpay_order["id"]
+            payment.save()
+
+            cart_items.delete()
+
+            return Response({
+                "order_id": order.id,
+                "razorpay_order_id": razorpay_order["id"],
+                "amount": total_amount,
+                "key": settings.RAZORPAY_KEY_ID
+            })
+
+        # COD flow
         cart_items.delete()
-
-        return Response(
-            {"message": "Order placed successfully", "order_id": order.id},
-            status=status.HTTP_201_CREATED
-        )
-
+        return Response({"message": "Order placed (COD)"})
 
 class CancelOrderAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -126,3 +131,12 @@ class CheckoutSummaryAPIView(APIView):
         except Exception as e:
             print(f"Checkout Summary Error: {str(e)}")
             return Response({"error": "Calculation error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class UserOrderListAPIView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by('-created_at')
