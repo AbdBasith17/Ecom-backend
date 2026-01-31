@@ -8,6 +8,8 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 
 from rest_framework.permissions import IsAdminUser,AllowAny
 
+from rest_framework import filters
+
 class ProductListView(generics.ListAPIView):
     permission_classes = [AllowAny]
     queryset = Product.objects.filter(is_active=True)
@@ -17,6 +19,7 @@ class ProductListView(generics.ListAPIView):
 
     filterset_fields = ['category']
     ordering_fields = ['price', 'created_at']
+    filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description']
 
 class ProductDetailView(generics.RetrieveAPIView):

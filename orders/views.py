@@ -14,6 +14,8 @@ from cart.models import CartItem
 from addresses.models import Address
 from .models import Order, OrderItem
 from payments.models import Payment
+from payments.models import Payment, RevenueLog 
+from products.models import Product
 import razorpay
 from django.conf import settings
 
@@ -79,9 +81,12 @@ class PlaceOrderAPIView(APIView):
 class CancelOrderAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, pk):
+    # Change 'post' to 'patch' to match your frontend request
+    @transaction.atomic
+    def patch(self, request, pk): 
         try:
-            order = Order.objects.get(id=pk, user=request.user)
+            # We use select_for_update to lock the row while we change status and stock
+            order = Order.objects.select_for_update().get(id=pk, user=request.user)
         except Order.DoesNotExist:
             return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -91,10 +96,26 @@ class CancelOrderAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # 1. Reverse Stock (Crucial for inventory accuracy)
+        for item in order.items.all():
+            product = item.product
+            product.stock += item.quantity
+            product.save()
+
+        # 2. Financial Reversal (Only if it was an online payment)
+        if order.payment_method == "RAZORPAY":
+            RevenueLog.objects.create(
+                order=order,
+                amount=order.total_amount,
+                transaction_type='EXPENSE',
+                note=f"Refund/Reversal for cancelled order #{order.id}"
+            )
+
+        # 3. Update Status
         order.status = "CANCELLED"
         order.save()
 
-        return Response({"message": "Order cancelled successfully"})
+        return Response({"message": "Order cancelled successfully and stock returned"})
 
 
 class CheckoutSummaryAPIView(APIView):
@@ -102,7 +123,7 @@ class CheckoutSummaryAPIView(APIView):
 
     def get(self, request):
         try:
-            # 🛒 1. Filter items correctly
+            # 🛒 1. Filter items correctlyyy
             cart_items = CartItem.objects.filter(cart__user=request.user)
 
             if not cart_items.exists():
@@ -140,3 +161,24 @@ class UserOrderListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).order_by('-created_at')
+    
+
+
+
+class AdminOrderListAPIView(generics.ListAPIView):
+    queryset = Order.objects.all().order_by('-created_at')
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class AdminUpdateOrderStatusAPIView(APIView):
+    def patch(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+            new_status = request.data.get("status")
+            if new_status in dict(Order.STATUS_CHOICES):
+                order.status = new_status
+                order.save()
+                return Response({"message": "Status updated"})
+            return Response({"error": "Invalid status"}, status=400)
+        except Order.DoesNotExist:
+            return Response(status=404)

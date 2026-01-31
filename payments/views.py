@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Payment
+from .models import Payment ,RevenueLog
 from .serializers import PaymentVerifySerializer
 from orders.models import Order
 
@@ -49,54 +49,78 @@ class CreateRazorpayOrderAPIView(APIView):
 
 
 
+
+
 class VerifyPaymentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @transaction.atomic
     def post(self, request):
+        # 1. Validate incoming Razorpay data
         serializer = PaymentVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        payment = Payment.objects.select_related("order").select_for_update().get(
-            razorpay_order_id=data["razorpay_order_id"]
-        )
+        # 2. Get payment record and lock it for update to prevent race conditions
+        try:
+            payment = Payment.objects.select_related("order").select_for_update().get(
+                razorpay_order_id=data["razorpay_order_id"]
+            )
+        except Payment.DoesNotExist:
+            return Response({"error": "Payment record not found"}, status=404)
 
-        # 🔁 Prevent double processing
+        # 🔁 3. Prevent double processing
         if payment.status == "SUCCESS":
             return Response({"message": "Payment already processed"})
 
+        # 4. Initialize Razorpay Client
         client = razorpay.Client(
             auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
 
         try:
+            # 5. Verify Signature
             client.utility.verify_payment_signature(data)
 
+            # 6. Update Payment Status
             payment.status = "SUCCESS"
             payment.razorpay_payment_id = data["razorpay_payment_id"]
             payment.save(update_fields=["status", "razorpay_payment_id"])
 
+            # 7. Update Order Status
             order = payment.order
             order.status = "ORDER_PLACED"
             order.save(update_fields=["status"])
 
-            # 🔻 Reduce stock
-            for item in order.items.select_related("product"):
-                product = item.product
+            # 💰 8. RECORD THE REVENUE (The new Ledger step)
+            # Since the payment is successful, we log the income now.
+            RevenueLog.objects.create(
+                order=order,
+                amount=order.total_amount,
+                transaction_type='INCOME',
+                note=f"Razorpay payment verified. ID: {data['razorpay_payment_id']}"
+            )
 
-                if product.stock < item.quantity:
-                    raise Exception("Insufficient stock")
+            # NOTE: We do NOT reduce stock here because we already 
+            # reduced it in PlaceOrderAPIView to reserve the items.
 
-                product.stock -= item.quantity
-                product.save(update_fields=["stock"])
-
-            return Response({"message": "Payment verified & order placed"})
+            return Response({
+                "message": "Payment verified, revenue logged & order placed",
+                "order_id": order.id
+            }, status=status.HTTP_200_OK)
 
         except razorpay.errors.SignatureVerificationError:
+            # 9. Handle Verification Failure
             payment.status = "FAILED"
             payment.save(update_fields=["status"])
+            
+            # Note: We keep the order status as 'PENDING'. 
+            # You can later have a cleanup task to return stock if not paid within X minutes.
             return Response({"error": "Verification failed"}, status=400)
+            
+        except Exception as e:
+            # 10. Handle unexpected errors
+            return Response({"error": str(e)}, status=500)
 
 
 # class VerifyPaymentAPIView(APIView):
