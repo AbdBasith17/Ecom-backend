@@ -7,7 +7,9 @@ from .views import (
     Me,
     CookieTokenRefreshView,
     UserListView,
-    UserStatusUpdateView
+    UserStatusUpdateView,
+    ForgotPasswordConfirm,
+    ForgotPasswordRequest
 )
 
 
@@ -23,4 +25,7 @@ urlpatterns = [
 
     path('admin/users/', UserListView.as_view(), name='user-list'),
     path('admin/users/update/<int:pk>/', UserStatusUpdateView.as_view(), name='user-update'),
+
+    path('forgot-password-request/', ForgotPasswordRequest.as_view(), name='forgot-password-request'),
+    path('forgot-password-confirm/', ForgotPasswordConfirm.as_view(), name='forgot-password-confirm'),
 ]

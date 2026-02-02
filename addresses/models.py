@@ -4,7 +4,6 @@ from django.conf import settings
 
 class Address(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="addresses")
-    full_name = models.CharField(max_length=100)
     phone = models.CharField(max_length=15)
     address_line = models.TextField()
     city = models.CharField(max_length=100)

@@ -15,7 +15,9 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from django.utils import timezone
 from datetime import timedelta
-import random
+
+
+
 
 
 class Register(APIView):
@@ -169,35 +171,42 @@ class Me(APIView):
         })
 
 
-from rest_framework_simplejwt.views import TokenRefreshView
-from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
+
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        refresh = request.COOKIES.get("refresh")
-        if not refresh:
+        refresh_token = request.COOKIES.get("refresh")
+        if not refresh_token:
             return Response({"error": "No refresh token"}, status=401)
-
-        request.data["refresh"] = refresh
-
+        
+        
+        data = request.data.copy()
+        data["refresh"] = refresh_token
+        
+        
+        serializer = self.get_serializer(data=data)
+        
         try:
-            response = super().post(request, *args, **kwargs)
-
-            response.set_cookie(
-                key="access",
-                value=response.data["access"],
-                httponly=True,
-                samesite="Lax",     
-                secure=False,        
-                max_age=60 * 15,    
-            )
-
-            del response.data["access"]
-            return response
-
+            serializer.is_valid(raise_exception=True)
         except (InvalidToken, TokenError):
             return Response({"error": "Invalid refresh token"}, status=401)
+
+        response = Response(serializer.validated_data, status=200)
+        
+        
+        response.set_cookie(
+            key="access",
+            value=response.data["access"],
+            httponly=True,
+            samesite="Lax",
+            secure=False,
+            max_age=60 * 15,
+        )
+        
+        
+        del response.data["access"]
+        return response
         
 
 from rest_framework import generics, permissions
@@ -223,3 +232,59 @@ class UserStatusUpdateView(generics.UpdateAPIView):
             instance.save()
             return Response({"message": "Status updated successfully"}, status=200)
         return Response({"error": "is_active field required"}, status=400)
+    
+
+
+
+#pasword forget handling 
+
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class ForgotPasswordRequest(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email", "").strip()
+        user = User.objects.filter(email=email).first()
+        
+       
+        if user:
+            
+            EmailOTP.objects.filter(user=user).delete()
+            
+            otp = str(random.randint(100000, 999999))
+            expires = timezone.now() + timedelta(minutes=10)
+            
+            EmailOTP.objects.create(user=user, otp=otp, expires_at=expires)
+            send_otp_email(user.email, otp)
+        
+        return Response({"message": "If an account exists, an OTP has been sent."}, status=200)
+
+class ForgotPasswordConfirm(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email", "").strip()
+        otp = request.data.get("otp", "").strip()
+        new_password = request.data.get("new_password", "")
+
+        if len(new_password) < 8:
+            return Response({"error": "Password must be at least 8 characters."}, status=400)
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "Invalid request."}, status=400)
+
+        otp_obj = EmailOTP.objects.filter(user=user, otp=otp).last()
+
+        if not otp_obj or otp_obj.is_expired():
+            return Response({"error": "Invalid or expired OTP."}, status=400)
+
+       
+        user.set_password(new_password)
+        user.save()
+        otp_obj.delete()
+        
+        return Response({"message": "Password reset successfully."}, status=200)
