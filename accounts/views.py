@@ -17,54 +17,96 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from django.conf import settings
 
 
+
+
+from django.db import transaction # Import transaction
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+import random
+from django.utils import timezone
+from datetime import timedelta
+from .serializers import RegisterSerializer
+from .models import EmailOTP
+from .otp import send_otp_email
 
 class Register(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        email = request.data.get('email', '').lower().strip()
+        
+         # inactive user already exists MAIL HANDLING  PART
+        existing_user = User.objects.filter(email=email).first()
+        
+        if existing_user:
+            if existing_user.is_active:
+                return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                existing_user.delete()
+
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
 
-        otp = str(random.randint(100000, 999999))
-        expires = timezone.now() + timedelta(minutes=10)  
-        EmailOTP.objects.create(user=user, otp=otp, expires_at=expires)
+        try:
+            with transaction.atomic():
+                user = serializer.save()
 
-        return Response(
-            {"message": "OTP sent to email", "email": user.email},
-            status=status.HTTP_201_CREATED
-        )
+                otp = str(random.randint(100000, 999999))
+                expires = timezone.now() + timedelta(minutes=10)
+                EmailOTP.objects.create(user=user, otp=otp, expires_at=expires)
 
+                send_otp_email(user.email, otp)
+
+            return Response(
+                {"message": "OTP sent to email", "email": user.email},
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": f"Registration failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class VerifyOTP(APIView): 
     permission_classes = [AllowAny]
 
     def post(self, request):
-        email = request.data.get("email")
-        otp = request.data.get("otp")
+        
+        email = request.data.get("email", "").lower().strip()
+        otp = request.data.get("otp", "").strip()
 
         if not email or not otp:
             return Response({"error": "Email and OTP required"}, status=400)
+ 
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "User not found"}, status=404)
 
-        user = get_object_or_404(User, email=email)
         otp_obj = EmailOTP.objects.filter(user=user).last()
 
         if not otp_obj:
-            return Response({"error": "OTP not found"}, status=400)
-
+            return Response({"error": "No OTP generated for this account"}, status=400)
+ 
         if otp_obj.is_expired():
-            return Response({"error": "OTP expired"}, status=400)
-
+            return Response({"error": "OTP expired. Please request a new one."}, status=400)
+ 
         if otp_obj.otp != otp:
             return Response({"error": "Invalid OTP"}, status=400)
 
         user.is_active = True
         user.save()
-        otp_obj.delete()
+        
+        EmailOTP.objects.filter(user=user).delete()
 
-        return Response({"message": "Email verified"}, status=200)
+        return Response({"message": "Email verified successfully!"}, status=200)
 
 
 
@@ -128,6 +170,54 @@ class Login(APIView):
         )
 
         return response
+    
+class GoogleSignInView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+            email = idinfo['email']
+            full_name = idinfo.get('name', '')
+
+            
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'name': full_name,
+                    'is_active': True,
+                }
+            )
+
+            # If user already existed but was inactive (e.g., registered but didn't verify OTP)
+            # Google Login acts as a verification, so we activate them.
+            if not user.is_active:
+                user.is_active = True
+                user.save()
+
+            # Generate tokens (Using your CustomRefreshToken)
+            refresh = CustomRefreshToken.for_user(user)
+
+            response = Response({
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "role": user.role,
+                }
+            }, status=status.HTTP_200_OK)
+
+           
+            response.set_cookie("access", str(refresh.access_token), httponly=True, samesite="Lax", secure=False, max_age=60*15)
+            response.set_cookie("refresh", str(refresh), httponly=True, samesite="Lax", secure=False, max_age=60*60*24*7)
+
+            return response
+
+        except ValueError:
+            return Response({"error": "Invalid Google Token"}, status=400)   
 
 
 class Logout(APIView):
@@ -172,7 +262,7 @@ class Me(APIView):
 
 
 
-
+#token handling
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
@@ -208,6 +298,7 @@ class CookieTokenRefreshView(TokenRefreshView):
         del response.data["access"]
         return response
         
+#for admin      
 
 from rest_framework import generics, permissions
 

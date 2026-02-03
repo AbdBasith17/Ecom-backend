@@ -12,4 +12,4 @@ class Address(models.Model):
     is_default = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.full_name} - {self.city}"
+     return f"{self.user.email} - {self.city}" 

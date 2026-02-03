@@ -9,7 +9,8 @@ from .views import (
     UserListView,
     UserStatusUpdateView,
     ForgotPasswordConfirm,
-    ForgotPasswordRequest
+    ForgotPasswordRequest,
+    GoogleSignInView,
 )
 
 
@@ -18,6 +19,8 @@ urlpatterns = [
     path("register/", Register.as_view()),
     path("verify-otp/", VerifyOTP.as_view()),
     path("login/", Login.as_view()),
+    path('google/', GoogleSignInView.as_view(), name='google_auth'),
+
     path("logout/", Logout.as_view()),
     path("me/", Me.as_view()),
     path("token/refresh/", CookieTokenRefreshView.as_view()),

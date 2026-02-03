@@ -198,11 +198,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 
-
-
 APPEND_SLASH=False
-
-
 
 RAZORPAY_KEY_ID = "rzp_test_S9yEQRYKtkueYU"
 RAZORPAY_KEY_SECRET = "F82Q6LtIZXOALiYeiS3XBGhX"
+
+
+GOOGLE_CLIENT_ID = "43587773755-lju0k0i38psitibubt8sp2355i7rm1kp.apps.googleusercontent.com"

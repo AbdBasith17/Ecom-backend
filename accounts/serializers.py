@@ -7,9 +7,7 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=6)
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already exists")
-        return value
+        return value.lower().strip()
 
     def create(self, validated_data):
         user = User.objects.create_user(

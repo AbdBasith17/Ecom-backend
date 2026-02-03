@@ -15,12 +15,18 @@ class ProductListView(generics.ListAPIView):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     pagination_class = ProductPagination
-    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    
+    # COMBINE ALL FILTERS HERE IN ONE LIST
+    filter_backends = [
+        DjangoFilterBackend, 
+        OrderingFilter, 
+        SearchFilter
+    ]
 
     filterset_fields = ['category']
-    ordering_fields = ['price', 'created_at']
-    filter_backends = [filters.SearchFilter]
+    ordering_fields = ['price', 'created_at', 'title']  
     search_fields = ['title', 'description']
+    ordering = ['-created_at']
 
 class ProductDetailView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]

@@ -13,7 +13,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     # These now match your Address model exactly
     shipping_address = serializers.ReadOnlyField(source='address.address_line')
-    address_name = serializers.ReadOnlyField(source='address.full_name')
+    address_name = serializers.ReadOnlyField(source='user.name')
     phone = serializers.ReadOnlyField(source='address.phone')
     city = serializers.ReadOnlyField(source='address.city')
     pincode = serializers.ReadOnlyField(source='address.pincode')
