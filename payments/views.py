@@ -8,7 +8,7 @@ from rest_framework import status
 from .models import Payment ,RevenueLog
 from .serializers import PaymentVerifySerializer
 from orders.models import Order
-from cart.models import CartItem
+
 
 class CreateRazorpayOrderAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -50,6 +50,9 @@ class CreateRazorpayOrderAPIView(APIView):
 
 
 
+
+from cart.models import CartItem 
+
 class VerifyPaymentAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -66,12 +69,16 @@ class VerifyPaymentAPIView(APIView):
         except Payment.DoesNotExist:
             return Response({"error": "Payment record not found"}, status=404)
 
+        if payment.status == "SUCCESS":
+            return Response({"message": "Payment already processed"})
+
         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
         try:
+           
             client.utility.verify_payment_signature(data)
 
-            # 1. Update Payment & Order
+           
             payment.status = "SUCCESS"
             payment.razorpay_payment_id = data["razorpay_payment_id"]
             payment.save()
@@ -80,20 +87,22 @@ class VerifyPaymentAPIView(APIView):
             order.status = "ORDER_PLACED"
             order.save()
 
-            # 2. Record Revenue
+           
             RevenueLog.objects.create(
                 order=order,
                 amount=order.total_amount,
                 transaction_type='INCOME',
-                note=f"Razorpay ID: {data['razorpay_payment_id']}"
+                note=f"Razorpay Verified: {data['razorpay_payment_id']}"
             )
 
-            # ✅ 3. CLEAR CART NOW
+            
             CartItem.objects.filter(cart__user=request.user).delete()
 
-            return Response({"message": "Success", "order_id": order.id}, status=200)
+            return Response({"message": "Payment successful", "order_id": order.id}, status=200)
 
         except razorpay.errors.SignatureVerificationError:
+            payment.status = "FAILED"
+            payment.save()
             return Response({"error": "Invalid signature"}, status=400)
 
 

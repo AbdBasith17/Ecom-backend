@@ -16,7 +16,7 @@ class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     pagination_class = ProductPagination
     
-    # COMBINE ALL FILTERS HERE IN ONE LIST
+    
     filter_backends = [
         DjangoFilterBackend, 
         OrderingFilter, 

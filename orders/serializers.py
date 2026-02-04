@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import Order, OrderItem
 
-# orders/serializers.py
+
 class OrderItemSerializer(serializers.ModelSerializer):
-    # Changed to .title based on your previous product sorting logic
+    
     product_name = serializers.ReadOnlyField(source='product.title') 
     
     class Meta:
@@ -11,7 +11,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ["product_name", "quantity", "price"]
 
 class OrderSerializer(serializers.ModelSerializer):
-    # These now match your Address model exactly
+   
     shipping_address = serializers.ReadOnlyField(source='address.address_line')
     address_name = serializers.ReadOnlyField(source='user.name')
     phone = serializers.ReadOnlyField(source='address.phone')

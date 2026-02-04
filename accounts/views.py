@@ -1,40 +1,28 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from django.contrib.auth import authenticate
-from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, generics, permissions
+
+from django.contrib.auth import authenticate, get_user_model
+from django.conf import settings
+from django.utils import timezone
+from django.db import transaction
+
+from datetime import timedelta
 import random
-from .serializers import RegisterSerializer,UserAdminSerializer
-from .models import User, EmailOTP
-from .customtoken import CustomRefreshToken
-from .authentication import CookieJWTAuthentication
-from .otp import send_otp_email
+
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
-from django.utils import timezone
-from datetime import timedelta
-
-
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from django.conf import settings
 
-
-
-
-from django.db import transaction # Import transaction
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-import random
-from django.utils import timezone
-from datetime import timedelta
-from .serializers import RegisterSerializer
-from .models import EmailOTP
+from .models import User, EmailOTP
+from .serializers import RegisterSerializer, UserAdminSerializer
+from .customtoken import CustomRefreshToken
+from .authentication import CookieJWTAuthentication
 from .otp import send_otp_email
+
 
 class Register(APIView):
     permission_classes = [AllowAny]
@@ -87,6 +75,7 @@ class VerifyOTP(APIView):
             return Response({"error": "Email and OTP required"}, status=400)
  
         user = User.objects.filter(email=email).first()
+
         if not user:
             return Response({"error": "User not found"}, status=404)
 
@@ -192,13 +181,11 @@ class GoogleSignInView(APIView):
                 }
             )
 
-            # If user already existed but was inactive (e.g., registered but didn't verify OTP)
-            # Google Login acts as a verification, so we activate them.
             if not user.is_active:
                 user.is_active = True
                 user.save()
 
-            # Generate tokens (Using your CustomRefreshToken)
+            
             refresh = CustomRefreshToken.for_user(user)
 
             response = Response({
@@ -270,10 +257,8 @@ class CookieTokenRefreshView(TokenRefreshView):
         if not refresh_token:
             return Response({"error": "No refresh token"}, status=401)
         
-        
         data = request.data.copy()
         data["refresh"] = refresh_token
-        
         
         serializer = self.get_serializer(data=data)
         
@@ -284,7 +269,7 @@ class CookieTokenRefreshView(TokenRefreshView):
 
         response = Response(serializer.validated_data, status=200)
         
-        
+        # Set new Access Cookie
         response.set_cookie(
             key="access",
             value=response.data["access"],
@@ -294,6 +279,17 @@ class CookieTokenRefreshView(TokenRefreshView):
             max_age=60 * 15,
         )
         
+        # Set new Refresh Cookie if rotated
+        if "refresh" in response.data:
+            response.set_cookie(
+                key="refresh",
+                value=response.data["refresh"],
+                httponly=True,
+                samesite="Lax",
+                secure=False,
+                max_age=60 * 60 * 24 * 7,
+            )
+            del response.data["refresh"]
         
         del response.data["access"]
         return response
@@ -324,8 +320,6 @@ class UserStatusUpdateView(generics.UpdateAPIView):
             return Response({"message": "Status updated successfully"}, status=200)
         return Response({"error": "is_active field required"}, status=400)
     
-
-
 
 #pasword forget handling 
 

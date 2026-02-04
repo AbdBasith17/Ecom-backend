@@ -174,33 +174,31 @@ class AdminUpdateOrderStatusAPIView(APIView):
     @transaction.atomic
     def patch(self, request, pk):
         try:
-            # Lock the row for processing
+            
             order = Order.objects.select_for_update().get(pk=pk)
             new_status = request.data.get("status")
 
-            # 🛑 1. LOCKING MECHANISM
-            # If the order is already Delivered, don't allow any more changes
+            
             if order.status == "DELIVERED":
                 return Response(
                     {"error": "This order is already delivered and cannot be changed."}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # If the order is already Cancelled, you probably shouldn't be able to change it either
+         
             if order.status == "CANCELLED":
                 return Response(
                     {"error": "Cancelled orders cannot be modified."}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 2. VALIDATE STATUS
+          
             if new_status in dict(Order.STATUS_CHOICES):
                 old_status = order.status
                 order.status = new_status
                 order.save()
 
-                # 💰 3. REVENUE LOGIC FOR COD
-                # Only log revenue if it's shifting TO delivered for the first time
+                
                 if new_status == "DELIVERED":
                     if order.payment_method == "COD":
                         RevenueLog.objects.create(
@@ -209,8 +207,7 @@ class AdminUpdateOrderStatusAPIView(APIView):
                             transaction_type='INCOME',
                             note=f"COD Order #{order.id} marked as Delivered."
                         )
-                    # Note: Razorpay is already logged at payment verification
-                
+                    
                 return Response({"message": f"Status updated to {new_status}"})
             
             return Response({"error": "Invalid status choice"}, status=400)

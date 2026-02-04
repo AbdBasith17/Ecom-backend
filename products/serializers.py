@@ -12,17 +12,17 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'parent']
 
 class ProductSerializer(serializers.ModelSerializer):
-    # 'images' shows the existing related images (Read Only)
+  
     images = ProductImageSerializer(many=True, read_only=True)
     
-    # Use PrimaryKeyRelatedField so the frontend can send just the Category ID
+   
     category = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), 
         required=False, 
         allow_null=True
     )
     
-    # 'category_name' allows the frontend to display the name without another API call
+
     category_name = serializers.CharField(source='category.name', read_only=True)
 
     class Meta:
@@ -36,8 +36,7 @@ class ProductSerializer(serializers.ModelSerializer):
         """
         Handles Product creation and multiple local image uploads.
         """
-        # Extract files from the request context
-        # 'uploaded_images' must match the key used in React's FormData.append()
+        
         images_data = self.context.get('view').request.FILES.getlist('uploaded_images')
         
         product = Product.objects.create(**validated_data)
@@ -53,16 +52,14 @@ class ProductSerializer(serializers.ModelSerializer):
         """
         images_data = self.context.get('view').request.FILES.getlist('uploaded_images')
 
-        # Update standard fields (title, price, ml, etc.)
+       
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # If new images are uploaded from the PC, append them to the product
+        
         if images_data:
-            # Optional: Uncomment the line below if you want to replace 
-            # all old images with the new ones upon update:
-            # instance.images.all().delete() 
+           
             
             for image_data in images_data:
                 ProductImage.objects.create(product=instance, image=image_data)

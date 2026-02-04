@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAdminUser
 from datetime import timedelta
 from django.utils import timezone
 
-# Import your models
+
 from payments.models import RevenueLog
 from orders.models import Order
 from products.models import Product
@@ -18,8 +18,7 @@ class AdminDashboardStatsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        # 1. TOP CARDS DATA
-        # Sum of all successful income from your RevenueLog
+      
         total_revenue = RevenueLog.objects.filter(
             transaction_type='INCOME'
         ).aggregate(total=Sum('amount'))['total'] or 0
@@ -28,7 +27,7 @@ class AdminDashboardStatsView(APIView):
         total_customers = User.objects.filter(is_staff=False).count()
         total_products = Product.objects.count()
 
-        # 2. REVENUE LINE CHART (Last 30 Days)
+      
         thirty_days_ago = timezone.now() - timedelta(days=30)
         revenue_history = (
             RevenueLog.objects.filter(
@@ -41,8 +40,6 @@ class AdminDashboardStatsView(APIView):
             .order_by('date')
         )
 
-        # 3. TOP 5 BEST SELLERS (Pie Chart)
-        # Using the 'sold' field from your Product model
         top_products = Product.objects.filter(sold__gt=0).order_by('-sold')[:5]
         
         pie_data = [

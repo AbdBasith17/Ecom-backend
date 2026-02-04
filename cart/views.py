@@ -17,11 +17,11 @@ class CartAPIView(APIView):
 
     def get(self, request):
         cart = get_or_create_cart(request.user)
-        # Add context={'request': request} to the serializer
+        
         serializer = CartItemSerializer(
             cart.items.all(), 
             many=True,
-            context={'request': request} # <--- THIS IS THE KEY CHANGE
+            context={'request': request} 
         )
         return Response(serializer.data)
 
