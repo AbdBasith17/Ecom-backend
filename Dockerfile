@@ -1,7 +1,9 @@
 FROM python:3.12-slim
 
 # Prevent Python from buffering stdout and stderr
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 
@@ -11,15 +13,16 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# 1. Copy requirements from your Windows root to Docker /app/
-COPY requirements.txt /app/
+# Install requirements
+COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Copy EVERYTHING from E:\Ecomm into Docker /app/
-COPY . /app/
+# Copy project files
+COPY . .
 
 EXPOSE 8000
 
-# 3. Use 'sh' to enter the ecom folder and then run the server
-CMD ["sh", "-c", "python ecom/manage.py runserver 0.0.0.0:8000"]
+# We leave the CMD blank here because docker-compose.yml will override it 
+# with the professional Gunicorn command.
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--chdir", "ecom", "ecom.wsgi:application"]

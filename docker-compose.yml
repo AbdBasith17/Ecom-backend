@@ -18,8 +18,8 @@ services:
   # CONTAINER 2: THE DJANGO APP (GUNICORN)
   web:
     build: .
-    # We point Gunicorn to your wsgi file inside ecom/ecom/
-    command: gunicorn ecom.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    
+    command: gunicorn --bind 0.0.0.0:8000 --chdir ecom ecom.wsgi:application --workers 3
     volumes:
       - .:/app
     env_file: .env
