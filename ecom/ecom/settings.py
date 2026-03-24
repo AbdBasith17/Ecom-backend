@@ -67,14 +67,12 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
-    
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', 
+    'django.middleware.security.SecurityMiddleware', 
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-   
+    'django.middleware.common.CommonMiddleware', 
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -86,9 +84,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173", 
     "http://127.0.0.1:5173", 
     "https://perfaura.vercel.app",
-    
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://perfaura.vercel.app",
+]
 
 ROOT_URLCONF = 'ecom.urls'
 
@@ -220,3 +220,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "E-commerce Backend API Documentation",
     "VERSION": "1.0.0",
 }
+
+# Security settings for Cross-Domain Cookies
+JWT_AUTH_COOKIE = 'access'
+JWT_AUTH_REFRESH_COOKIE = 'refresh'
+JWT_AUTH_SAMESITE = 'None'  
+JWT_AUTH_SECURE = True      
