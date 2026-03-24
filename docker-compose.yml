@@ -1,0 +1,29 @@
+services:
+  # CONTAINER 1: THE DATABASE
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # Load your .env file
+    env_file: .env
+    environment:
+      # These map your .env keys to the keys Postgres needs to start up
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+
+  # CONTAINER 2: YOUR DJANGO APP
+  web:
+    build: . 
+    # This command tells Docker to run the server inside the 'ecom' subfolder
+    command: python ecom/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app 
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - db 
+
+volumes:
+  postgres_data:

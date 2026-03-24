@@ -1,0 +1,68 @@
+# =========================
+# PYTHON / DJANGO
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+.python-version
+
+# Django specific
+db.sqlite3
+db.sqlite3-journal
+local_settings.py
+staticfiles/
+media/
+
+# =========================
+# VIRTUAL ENVIRONMENTS
+# =========================
+# This ignores your 'env' folder in the root
+env/
+venv/
+ENV/
+.env/
+.venv/
+
+# =========================
+# DOCKER
+# =========================
+# We ignore the actual data stored by Postgres so it doesn't bloat your repo
+postgres_data/
+
+# =========================
+# ENVIRONMENT VARIABLES (CRITICAL)
+# =========================
+# Do not push your secrets to GitHub
+.env
+.env.local
+.env.dev
+.env.prod
+
+# =========================
+# DATABASE BACKUPS
+# =========================
+# This ignores the backup file we discussed earlier
+*.sql
+*.dump
+
+# =========================
+# OS / IDE SETTINGS
+# =========================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# =========================
+# NODE / REACT (If applicable)
+# =========================
+node_modules/
+build/
+dist/
