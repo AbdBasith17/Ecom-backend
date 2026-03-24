@@ -43,7 +43,7 @@ postgres_data/
 # DATABASE BACKUPS
 # =========================
 # This ignores the backup file we discussed earlier
-*.sql
+#*.sql
 *.dump
 
 # =========================
