@@ -4,26 +4,40 @@ services:
     image: postgres:15
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    # Load your .env file
     env_file: .env
     environment:
-      # These map your .env keys to the keys Postgres needs to start up
       - POSTGRES_DB=${DB_NAME}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # CONTAINER 2: YOUR DJANGO APP
+  # CONTAINER 2: THE DJANGO APP (GUNICORN)
   web:
-    build: . 
-    # This command tells Docker to run the server inside the 'ecom' subfolder
-    command: python ecom/manage.py runserver 0.0.0.0:8000
+    build: .
+    # We point Gunicorn to your wsgi file inside ecom/ecom/
+    command: gunicorn ecom.wsgi:application --bind 0.0.0.0:8000 --workers 3
     volumes:
-      - .:/app 
-    ports:
-      - "8000:8000"
+      - .:/app
     env_file: .env
     depends_on:
-      - db 
+      db:
+        condition: service_healthy
+
+  # CONTAINER 3: THE REVERSE PROXY (NGINX)
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./ecom/staticfiles:/app/staticfiles
+      - ./ecom/media:/app/media
+    depends_on:
+      - web
 
 volumes:
   postgres_data:
