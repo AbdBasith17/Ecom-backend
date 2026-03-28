@@ -61,8 +61,8 @@ jobs:
             cd ${{ secrets.EC2_DEPLOY_PATH }}
             git pull origin master
             docker compose restart web
-            docker compose exec -T web python /app/ecom/manage.py migrate --noinput
-            docker compose exec -T web python /app/ecom/manage.py collectstatic --noinput
+            docker compose exec -T web python ecom/manage.py migrate --noinput
+            docker compose exec -T web python ecom/manage.py collectstatic --noinput
             docker compose ps
 
 
