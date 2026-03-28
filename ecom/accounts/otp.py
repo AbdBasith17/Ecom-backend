@@ -1,10 +1,14 @@
-from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
 
 def send_otp_email(email, otp):
-    send_mail(
-        subject="OTP Verification for Perfaura",
-        message=f"Your OTP is {otp}",
+    context = {'otp': otp}
+    html_content = render_to_string('emails/otp_email.html', context)
+    
+    email_message = EmailMessage(
+        subject="Verify your Perfaura Account",
+        body=html_content,
         from_email="basipp123@gmail.com",
-        recipient_list=[email],
-        fail_silently=False
+        to=[email],
     )
+    email_message.content_subtype = "html" 
