@@ -2,7 +2,7 @@ from django.core.mail import send_mail
 
 def send_otp_email(email, otp):
     send_mail(
-        subject="OTP Verification fro PerfAura",
+        subject="OTP Verification for PerfAura",
         message=f"Your OTP is {otp}",
         from_email="basipp123@example.com",
         recipient_list=[email],
