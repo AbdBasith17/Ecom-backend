@@ -203,25 +203,24 @@ class GoogleSignInView(APIView):
             return Response({"error": str(e)}, status=500)
 
 class Logout(APIView):
-    permission_classes = [AllowAny] 
+    permission_classes = [AllowAny]
 
     def post(self, request):
         response = Response({"message": "Logged out successfully"}, status=200)
+        
         refresh_token = request.COOKIES.get("refresh")
-
         if refresh_token:
             try:
                 token = CustomRefreshToken(refresh_token)
-                token.blacklist() 
+                token.blacklist()
             except Exception:
-                pass  
+                pass
 
-        cookie_params = {"samesite": "None", "secure": True, "path": "/"}
-        response.delete_cookie("access", **cookie_params)
-        response.delete_cookie("refresh", **cookie_params)
+       
+        response.delete_cookie("access", path="/", samesite="None")
+        response.delete_cookie("refresh", path="/", samesite="None")
 
         return response
-
 class Me(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]

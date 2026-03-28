@@ -1,7 +1,4 @@
-"""
-Django settings for ecom project.
-"""
-
+                                                                                                                                                                                                                                                                                                           
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -14,39 +11,65 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-insecure-key-for-dev-only')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS should include your EC2 IP and Vercel domain
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '13.51.114.178,perfaura.vercel.app,localhost,127.0.0.1').split(',')
+# --- 1. DOMAIN & HOST SETTINGS ---
+# Updated to include your new DuckDNS domain
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'perfaura-api.duckdns.org,13.51.114.178,perfaura.vercel.app,localhost,127.0.0.1').split(',')
 
-# --- 1. CRITICAL PROXY & SSL SETTINGS ---
-# This tells Django to trust the 'https' header sent by Nginx
+# --- 2. PROXY & SSL SETTINGS ---
+# Tells Django to trust the 'https' header sent by Nginx
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False  # Let Nginx handle the redirect
+SECURE_SSL_REDIRECT = False  # Nginx handles the redirect
 
-# --- 2. GLOBAL COOKIE SECURITY (REQUIRED FOR CROSS-SITE) ---
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'None'
-CSRF_COOKIE_SAMESITE = 'None'
+# --- 3. DYNAMIC COOKIE SECURITY ---
+# If local (DEBUG=True), use Lax/False. If Production (AWS), use None/True.
+if DEBUG:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
+    JWT_AUTH_SECURE = False
+    JWT_AUTH_SAMESITE = 'Lax'
+else:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
+
+    JWT_AUTH_SECURE = True
+    JWT_AUTH_SAMESITE = 'None'
+
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False  # Set to False if your frontend needs to read CSRF token
+CSRF_COOKIE_HTTPONLY = False
+JWT_AUTH_HTTPONLY = True
 
-# --- 3. CORS & CSRF ORIGINS ---
+# --- 4. CORS & CSRF ORIGINS ---
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://perfaura.vercel.app",
 ]
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
+# Updated to include your NEW secure domain
 CSRF_TRUSTED_ORIGINS = [
-    "https://13.51.114.178",
+    "https://perfaura-api.duckdns.org",
     "https://perfaura.vercel.app",
 ]
 
 # --- Application definition ---
 INSTALLED_APPS = [
-    'accounts.apps.AccountsConfig', 
+    'accounts.apps.AccountsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -63,7 +86,7 @@ INSTALLED_APPS = [
     'orders',
     'addresses',
     'wishlist',
-    'django_filters', 
+    'django_filters',
     'payments',
     "corsheaders",
     "drf_spectacular",
@@ -72,11 +95,11 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', 
-    'django.middleware.security.SecurityMiddleware', 
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware', 
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -160,12 +183,9 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# --- JWT COOKIE SPECIFIC SETTINGS ---
+# --- JWT COOKIE NAMES ---
 JWT_AUTH_COOKIE = 'access'
 JWT_AUTH_REFRESH_COOKIE = 'refresh'
-JWT_AUTH_SAMESITE = 'None'
-JWT_AUTH_SECURE = True
-JWT_AUTH_HTTPONLY = True
 
 # --- AWS S3 Configuration ---
 USE_AWS = os.getenv('USE_AWS') == 'True'
@@ -195,3 +215,5 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "E-commerce Backend API Documentation",
     "VERSION": "1.0.0",
 }
+
+
